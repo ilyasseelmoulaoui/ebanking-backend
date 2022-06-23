@@ -1,9 +1,9 @@
 package com.elmoulaoui.ebankingbackend.services;
 
-import com.elmoulaoui.ebankingbackend.entities.BankAccount;
-import com.elmoulaoui.ebankingbackend.entities.CurrentAccount;
-import com.elmoulaoui.ebankingbackend.entities.Customer;
-import com.elmoulaoui.ebankingbackend.entities.SavingAccount;
+import com.elmoulaoui.ebankingbackend.entities.*;
+import com.elmoulaoui.ebankingbackend.enums.OperationType;
+import com.elmoulaoui.ebankingbackend.exceptions.BalanceNotSufficientException;
+import com.elmoulaoui.ebankingbackend.exceptions.BankAccountNotFoundException;
 import com.elmoulaoui.ebankingbackend.exceptions.CustomerNotFoundException;
 import com.elmoulaoui.ebankingbackend.repositories.AccountOperationRepository;
 import com.elmoulaoui.ebankingbackend.repositories.BankAccountRepository;
@@ -38,7 +38,7 @@ public class BankAccountServiceImpl implements BankAccountService{
     }
 
     @Override
-    public BankAccount saveCurrentBankAccount(double initialBalance, double overDraft, Long customerId) throws CustomerNotFoundException {
+    public CurrentAccount saveCurrentBankAccount(double initialBalance, double overDraft, Long customerId) throws CustomerNotFoundException {
         Customer customer = customerRepository.findById(customerId).orElse(null);
         if(customer==null)
             throw new CustomerNotFoundException("Customer not found");
@@ -53,7 +53,7 @@ public class BankAccountServiceImpl implements BankAccountService{
     }
 
     @Override
-    public BankAccount saveSavingBankAccount(double initialBalance, double interestRate, Long customerId) throws CustomerNotFoundException {
+    public SavingAccount saveSavingBankAccount(double initialBalance, double interestRate, Long customerId) throws CustomerNotFoundException {
         Customer customer = customerRepository.findById(customerId).orElse(null);
         if(customer==null)
             throw new CustomerNotFoundException("Customer not found");
@@ -70,26 +70,52 @@ public class BankAccountServiceImpl implements BankAccountService{
 
     @Override
     public List<Customer> listCustomer() {
-        return null;
+        return customerRepository.findAll();
     }
 
     @Override
-    public BankAccount getBankAccount(String accountId) {
-        return null;
+    public BankAccount getBankAccount(String accountId) throws BankAccountNotFoundException {
+
+        BankAccount bankAccount = bankAccountRepository.findById(accountId)
+                .orElseThrow(()-> new BankAccountNotFoundException("BankAccount not found"));
+
+        return bankAccount;
     }
 
     @Override
-    public void debit(String accountId, double amount, String description) {
+    public void debit(String accountId, double amount, String description) throws BankAccountNotFoundException, BalanceNotSufficientException {
 
+        BankAccount bankAccount = getBankAccount(accountId);
+        if(bankAccount.getBalance()<amount)
+            throw new BalanceNotSufficientException("Balance not sufficient");
+        AccountOperation accountOperation = new AccountOperation();
+        accountOperation.setType(OperationType.DEBIT);
+        accountOperation.setAmount(amount);
+        accountOperation.setDescription(description);
+        accountOperation.setOperationDate(new Date());
+        accountOperation.setBankAccount(bankAccount);
+        accountOperationRepository.save(accountOperation);
+        bankAccount.setBalance(bankAccount.getBalance()-amount);
+        bankAccountRepository.save(bankAccount);
     }
 
     @Override
-    public void credit(String accountId, double amount, String description) {
-
+    public void credit(String accountId, double amount, String description) throws BankAccountNotFoundException {
+        BankAccount bankAccount = getBankAccount(accountId);
+        AccountOperation accountOperation = new AccountOperation();
+        accountOperation.setType(OperationType.CREDIT);
+        accountOperation.setAmount(amount);
+        accountOperation.setDescription(description);
+        accountOperation.setOperationDate(new Date());
+        accountOperation.setBankAccount(bankAccount);
+        accountOperationRepository.save(accountOperation);
+        bankAccount.setBalance(bankAccount.getBalance()+amount);
+        bankAccountRepository.save(bankAccount);
     }
 
     @Override
-    public void transfer(String accountIdSrc, String accountIdDst, double amount) {
-
+    public void transfer(String accountIdSrc, String accountIdDst, double amount) throws BankAccountNotFoundException, BalanceNotSufficientException {
+        debit(accountIdSrc,amount,"Transfer to "+accountIdDst);
+        credit(accountIdDst,amount,"Transfer from "+accountIdSrc);
     }
 }
