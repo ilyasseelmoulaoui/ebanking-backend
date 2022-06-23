@@ -10,8 +10,6 @@ import com.elmoulaoui.ebankingbackend.repositories.BankAccountRepository;
 import com.elmoulaoui.ebankingbackend.repositories.CustomerRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -117,5 +115,10 @@ public class BankAccountServiceImpl implements BankAccountService{
     public void transfer(String accountIdSrc, String accountIdDst, double amount) throws BankAccountNotFoundException, BalanceNotSufficientException {
         debit(accountIdSrc,amount,"Transfer to "+accountIdDst);
         credit(accountIdDst,amount,"Transfer from "+accountIdSrc);
+    }
+
+    @Override
+    public List<BankAccount> bankAccountList(){
+        return bankAccountRepository.findAll();
     }
 }
