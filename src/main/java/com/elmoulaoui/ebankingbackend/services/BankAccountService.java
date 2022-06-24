@@ -1,6 +1,6 @@
 package com.elmoulaoui.ebankingbackend.services;
 
-import com.elmoulaoui.ebankingbackend.dtos.CustomerDTO;
+import com.elmoulaoui.ebankingbackend.dtos.*;
 import com.elmoulaoui.ebankingbackend.entities.BankAccount;
 import com.elmoulaoui.ebankingbackend.entities.CurrentAccount;
 import com.elmoulaoui.ebankingbackend.entities.Customer;
@@ -12,15 +12,25 @@ import com.elmoulaoui.ebankingbackend.exceptions.CustomerNotFoundException;
 import java.util.List;
 
 public interface BankAccountService {
-    Customer saveCustomer(Customer customer);
-    CurrentAccount saveCurrentBankAccount(double initialBalance, double overDraft, Long customerId) throws CustomerNotFoundException;
-    SavingAccount saveSavingBankAccount(double initialBalance, double interestRate, Long customerId) throws CustomerNotFoundException;
+    CustomerDTO saveCustomer(CustomerDTO customerDTO);
+    CurrentBankAccountDTO saveCurrentBankAccount(double initialBalance, double overDraft, Long customerId) throws CustomerNotFoundException;
+    SavingBankAccountDTO saveSavingBankAccount(double initialBalance, double interestRate, Long customerId) throws CustomerNotFoundException;
     List<CustomerDTO> listCustomer();
-    BankAccount getBankAccount(String accountId) throws BankAccountNotFoundException;
+    BankAccountDTO getBankAccount(String accountId) throws BankAccountNotFoundException;
 
     void debit(String accountId,double amount, String description) throws BankAccountNotFoundException, BalanceNotSufficientException;
     void credit(String accountId,double amount, String description) throws BankAccountNotFoundException;
     void transfer(String accountIdSrc, String accountIdDst, double amount) throws BankAccountNotFoundException, BalanceNotSufficientException;
 
-    List<BankAccount> bankAccountList();
+    List<BankAccountDTO> bankAccountList();
+
+    CustomerDTO getCustomer(Long customerId) throws CustomerNotFoundException;
+
+    CustomerDTO updateCustomer(CustomerDTO customerDTO);
+
+    void deleteCustomer(Long customerId);
+
+    List<AccountOperationDTO> accountHistory(String accountId);
+
+    AccountHistoryDTO getAccountHistory(String accountId, int page, int size) throws BankAccountNotFoundException;
 }
